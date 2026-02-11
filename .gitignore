@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+bun.lock
+
+# User config (contains Safe addresses)
+config.json
+
+# Build artifacts
+dist/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

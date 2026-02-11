@@ -1,0 +1,9 @@
+{
+  "safes": {
+    "MySafe": {
+      "safeAddress": "0x..."
+    }
+  },
+  "proposerKeyEnv": "SAFE_PROPOSER_KEY",
+  "rpcUrl": "https://eth.drpc.org"
+}

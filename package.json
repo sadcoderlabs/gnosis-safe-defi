@@ -1,0 +1,13 @@
+{
+  "name": "gnosis-safe-defi",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "read": "bun run scripts/read.ts",
+    "propose": "bun run scripts/propose-batch.ts"
+  },
+  "dependencies": {
+    "@safe-global/protocol-kit": "^5.2.1",
+    "ethers": "^6.13.4"
+  }
+}
