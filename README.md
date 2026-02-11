@@ -1,14 +1,15 @@
 # Gnosis Safe DeFi
 
-A CLI toolkit for proposing DeFi transactions to Gnosis Safe multisig wallets. Build, review, and propose complex DeFi operations as batched Safe transactions.
+An AgentSkill for AI coding agents (Claude Code, OpenClaw, Codex, etc.) to manage DeFi positions via Gnosis Safe multisig wallets. The agent reads on-chain state, builds transactions, gets human confirmation, and proposes batched operations to the Safe.
 
-## Features
+## What is an AgentSkill?
 
-- **Multi-protocol support**: Aave V3, Spark (Lending & Savings), Lido, Fluid, and more
-- **Batch transactions**: Combine multiple operations into a single Safe proposal
-- **Read-only queries**: Check balances, positions, and pending rewards
-- **Safe management**: Update owners, thresholds, and execute signed transactions
-- **ERC-4626 compatible**: Works with any standard vault (Fluid, Spark Savings, etc.)
+This is **not a CLI tool** — it's a skill package designed to be used by AI agents with shell access. The agent:
+
+1. Receives natural language instructions (e.g., "deposit all USDC to Aave on Treasury")
+2. Runs the scripts to read state and build transactions
+3. Presents a plan for human review
+4. Proposes to Safe after confirmation
 
 ## Supported Protocols
 
@@ -24,11 +25,11 @@ A CLI toolkit for proposing DeFi transactions to Gnosis Safe multisig wallets. B
 ## Installation
 
 ```bash
-# Clone the repo
-git clone https://github.com/anthropics/gnosis-safe-defi.git
-cd gnosis-safe-defi
+# As a git submodule in your agent workspace
+git submodule add https://github.com/anthropics/gnosis-safe-defi.git skills/gnosis-safe-defi
 
 # Install dependencies
+cd skills/gnosis-safe-defi
 bun install
 
 # Configure
@@ -62,57 +63,52 @@ export SAFE_PROPOSER_KEY="0x..."
 export SAFE_PROPOSER_KEY=$(op read "op://vault/item/field")
 ```
 
-## Usage
+## Scripts Reference
 
 ### Reading Positions
 
 ```bash
 # Check all token balances
-bun run scripts/read.ts --safe 0x... --all
+bun run scripts/read.ts --safe Treasury --all
 
 # Check Aave positions
-bun run scripts/aave/positions.ts --safe 0x... --protocol aave
+bun run scripts/aave/positions.ts --safe Treasury --protocol aave
 
 # Check Spark Lending positions
-bun run scripts/aave/positions.ts --safe 0x... --protocol spark
+bun run scripts/aave/positions.ts --safe Treasury --protocol spark
 
 # Check Merkl rewards
-bun run scripts/merkl/check.ts --safe 0x...
+bun run scripts/merkl/check.ts --safe Treasury
 ```
 
 ### Building Transactions
 
-Build scripts generate transaction JSON without proposing. Review before submitting.
+Build scripts generate transaction JSON without proposing. The agent presents these for human review.
 
 ```bash
 # Aave/Spark Lending - Supply
 bun run scripts/aave/build-supply.ts \
-  --safe 0x... \
+  --safe Treasury \
   --protocol aave \
   --token USDC \
   --amount 1000        # or "all" for entire balance
 
 # ERC-4626 Vaults - Deposit
 bun run scripts/erc4626/build-deposit.ts \
-  --safe 0x... \
+  --safe Treasury \
   --vault fUSDC \      # fUSDC, fUSDT, spUSDC, spUSDT, spETH
   --amount all
 
 # Lido - Stake ETH
 bun run scripts/lido/build-stake.ts \
-  --safe 0x... \
+  --safe Treasury \
   --amount 10          # ETH amount, or "all"
 ```
 
 ### Proposing Transactions
 
 ```bash
-# From JSON array
-bun run scripts/propose-batch.ts \
-  --safe Treasury \
-  --txs '[{"to":"0x...","value":"0","data":"0x..."}]'
-
-# From file
+# From file (after human approval)
 bun run scripts/propose-batch.ts \
   --safe Treasury \
   --txs-file transactions.json
@@ -128,36 +124,44 @@ bun run scripts/propose-batch.ts \
 
 ```bash
 # List pending transactions
-bun run scripts/pending.ts --safe 0x...
+bun run scripts/pending.ts --safe Treasury
 
 # Check transaction status
-bun run scripts/check.ts --safe 0x... --tx-hash 0x...
+bun run scripts/check.ts --safe Treasury --tx-hash 0x...
 
 # Execute a fully-signed transaction
-bun run scripts/execute.ts --safe 0x... --tx-hash 0x...
+bun run scripts/execute.ts --safe Treasury --tx-hash 0x...
 
 # Update owners/threshold
 bun run scripts/update-owners.ts \
-  --safe 0x... \
+  --safe Treasury \
   --owners "0xA...,0xB...,0xC..." \
   --threshold 2 \
   --dry-run
 ```
 
-## Workflow
+## Agent Workflow
 
 ```
-┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐
-│  Build  │ ──▶ │ Review  │ ──▶ │ Propose │ ──▶ │  Sign   │ ──▶ │ Execute │
-└─────────┘     └─────────┘     └─────────┘     └─────────┘     └─────────┘
-   CLI            Human          CLI/API        Safe App         CLI/App
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────┐     ┌─────────┐
+│ User asks   │ ──▶ │ Agent reads │ ──▶ │ Agent builds│ ──▶ │ Human   │ ──▶ │ Agent   │
+│ "deposit X" │     │ on-chain    │     │ & presents  │     │ confirms│     │ proposes│
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────┘     └─────────┘
+                                                                                  │
+                                                                                  ▼
+                                                            ┌─────────┐     ┌─────────┐
+                                                            │ Execute │ ◀── │ Owners  │
+                                                            │ on-chain│     │ sign    │
+                                                            └─────────┘     └─────────┘
 ```
 
-1. **Build**: Run `build-*.ts` scripts to generate transaction calldata
-2. **Review**: Inspect the output JSON, verify addresses and amounts
-3. **Propose**: Submit to Safe Transaction Service via `propose-batch.ts`
-4. **Sign**: Owners approve in [Safe App](https://app.safe.global)
-5. **Execute**: Once threshold is met, execute on-chain
+1. **User Request**: Natural language instruction via chat
+2. **Read State**: Agent runs read scripts to check balances/positions
+3. **Build & Present**: Agent generates transactions and explains the plan
+4. **Human Confirmation**: User reviews and approves
+5. **Propose**: Agent submits to Safe Transaction Service
+6. **Sign**: Owners approve in [Safe App](https://app.safe.global)
+7. **Execute**: Once threshold is met, execute on-chain
 
 ## ERC-4626 Vaults
 
