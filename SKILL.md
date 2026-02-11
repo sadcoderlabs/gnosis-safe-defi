@@ -37,6 +37,18 @@ bun run scripts/lido/build-stake.ts --safe 0x... --amount all
 # Propose batch (dry run first)
 bun run scripts/propose-batch.ts --safe 0x... --txs-file txs.json --dry-run
 bun run scripts/propose-batch.ts --safe 0x... --txs-file txs.json
+
+# Check tx status
+bun run scripts/check.ts --safe 0x... --tx-hash 0x...
+
+# List pending txs
+bun run scripts/pending.ts --safe 0x...
+
+# Execute fully-signed tx
+bun run scripts/execute.ts --safe 0x... --tx-hash 0x...
+
+# Update owners
+bun run scripts/update-owners.ts --safe 0x... --owners "0x...,0x..." --threshold 3 --dry-run
 ```
 
 ## Workflow
