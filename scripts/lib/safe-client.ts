@@ -121,6 +121,7 @@ export class SafeClient {
 
     const safeTransaction = await this.protocolKit.createTransaction({
       transactions,
+      onlyCalls: true, // Use MultiSendCallOnly for better compatibility
       options: customNonce !== undefined ? { nonce: customNonce } : undefined,
     });
 
